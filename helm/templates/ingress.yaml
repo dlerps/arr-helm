@@ -1,0 +1,36 @@
+{{- if .Values.ghostfolio.ingress.enabled -}}
+{{ $fullName := include "ghostfolio-k8s.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "ghostfolio-k8s.labels" . | nindent 4 }}
+  {{- with .Values.ghostfolio.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ghostfolio.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    {{- range .Values.ghostfolio.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path | quote }}
+            {{- with .pathType }}
+            pathType: {{ . }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ $.Release.Name }}-ghostfolio
+                port:
+                  name: web
+          {{- end }}
+    {{- end }}
+  tls:
+    {{- toYaml .Values.ghostfolio.ingress.tls | nindent 4 }}
+{{- end }}

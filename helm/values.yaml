@@ -1,0 +1,93 @@
+global:
+  namespace: arr
+
+  serviceAccount:
+    # will create one service account per application with the name app-arr-sa
+    nameSuffix: arr-sa
+    autoMountServiceToken: true
+    annotations: {}
+
+  sharedVolumes:
+    # temporary volume that is shared between sabNZBd, Radarr & Sonarr
+    # Priority: customVolumDef > existingClaim > storageClass
+    # use customVolumeDef to defione something like a hostPath of nfs volume:
+    # customVolumDef:
+    #   nfs:
+    #      path: /path/to/download-temp
+     #     server: "192.168.0.100"
+    downloadTemp:
+      storageClass: default
+      existingClaim: ""
+      # customVolumDef: {}
+    tv:
+      - name: tv-series-volume
+        nfs:
+          path: /path/to/media
+          server: "192.168.0.100"
+    movies:
+      - name: movies-volume
+        nfs:
+          path: /path/to/media
+          server: "192.168.0.100"
+
+  # use cert-manager to issue certificates for the ingress routes
+  autoTls:
+    enabled: false
+    clusterIssuer: letsencrypt-prod
+    issuer: ""
+
+  ingress:
+    enabled: true
+    annotations: {}
+    className: ""
+    # tls: true
+    # tlsSecretName: ""
+
+
+sabNZBD:
+  enabled: true
+  name: sabnzbd
+  image: linuxserver/sabnzbd
+  tag: latest
+  pullPolicy: Always
+  serviceAccount:
+    annotations: {}
+  # needs global.ingress.enabled: true
+  inngressRoutes: 
+    - sabnzbd.local
+
+radaar:
+  enabled: true
+  name: radarr
+  image: linuxserver/radarr
+  tag: latest
+  pullPolicy: Always
+  serviceAccount:
+    annotations: {}
+  # needs global.ingress.enabled: true
+  inngressRoutes:
+    - radaar.local
+
+sonarr:
+  enabled: true
+  name: sonarr
+  image: linuxserver/sonarr
+  tag: latest
+  pullPolicy: Always
+  serviceAccount:
+    annotations: {}
+  # needs global.ingress.enabled: true
+  inngressRoute:
+    - sonarr.local
+
+overseerr:
+  enabled: true
+  namespace: overseerr
+  image: linuxserver/overseerr
+  tag: latest
+  pullPolicy: Always
+  serviceAccount:
+    annotations: {}
+  # needs global.ingress.enabled: true
+  inngressRoute:
+    - overseerr.local
