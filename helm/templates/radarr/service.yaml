@@ -1,0 +1,27 @@
+{{- if .Values.radarr.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.radarr.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" . | nindent 4 }}
+    app: {{ .Values.radarr.name }}
+  {{- with .Values.radarr.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.radarr.service.type }}
+  selector:
+    app: {{ .Values.radarr.name }}
+  ports:
+    - name: {{ .Values.radarr.name }}-web
+      protocol: TCP
+      targetPort: 7878
+      {{- if eq .Values.radarr.service.type "NodePort" }}
+      nodePort: {{ .Values.radarr.service.port }}
+      {{- else }}
+      port: {{ .Values.radarr.service.port }}
+      {{- end }}
+{{- end }}

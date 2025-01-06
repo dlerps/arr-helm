@@ -1,0 +1,35 @@
+{{- if and .Values.radarr.enabled .Values.global.autoTls.enabled .Values.global.ingress.tls .Values.global.ingress.enabled }}
+{{- $counter := 0 -}}
+{{- $name := .Values.radarr.name -}}
+
+{{- range .Values.radarr.ingressRoutes }}
+{{- $counter = add1 $counter }}
+
+{{- $issuer := .autoTlsIssuer }}
+{{- if empty $issuer }}
+{{- $issuer = $.Values.global.autoTls.issuer }}
+
+{{- end }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $name }}-cert-{{ $counter }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" $ | nindent 4 }}
+  annotations:
+    {{- if eq $issuer.kind "Issuer" }}
+    cert-manager.io/issuer: {{ $issuer.name }}
+    {{- else }}
+    cert-manager.io/cluster-issuer: {{ $issuer.name }}
+    {{- end }}
+spec:
+  issuerRef:
+    name: {{ $issuer.name }}
+    kind: {{ $issuer.kind }}
+  secretName: {{ $name }}-cert-secret-{{ $counter }}
+  dnsNames:
+    - {{ .host | quote }}
+---
+{{- end }}
+{{- end }}

@@ -34,6 +34,24 @@ spec:
           {{- end }}
     {{- end }}
     {{- end }}
+    {{- if .Values.radarr.enabled }}
+    {{- range .Values.radarr.ingressRoutes }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path | default "/" }}
+            {{- with .pathType }}
+            pathType: {{ . }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ $.Values.radarr.name }}
+                port:
+                  name: {{ $.Values.radarr.name }}-web
+          {{- end }}
+    {{- end }}
+    {{- end }}
   tls:
     {{- if or .Values.global.autoTls.enabled .Values.global.ingress.tls }}
     {{- if .Values.sabNZBD.enabled }}
@@ -44,6 +62,19 @@ spec:
         - {{ .host | quote }}
       {{- if $.Values.global.autoTls.enabled }}
       secretName: {{ $.Values.sabNZBD.name }}-cert-secret-{{ $counter }}
+      {{- else  }}
+      secretName: {{ .tlsSecretName | default $.Values.global.ingress.tlsSecretName }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Values.radarr.enabled }}
+    {{- $counter := 0 }}
+    {{- range .Values.radarr.ingressRoutes }}
+    {{- $counter = add1 $counter }}
+    - hosts:
+        - {{ .host | quote }}
+      {{- if $.Values.global.autoTls.enabled }}
+      secretName: {{ $.Values.radarr.name }}-cert-secret-{{ $counter }}
       {{- else  }}
       secretName: {{ .tlsSecretName | default $.Values.global.ingress.tlsSecretName }}
       {{- end }}

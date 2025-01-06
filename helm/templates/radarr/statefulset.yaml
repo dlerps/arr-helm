@@ -1,0 +1,114 @@
+{{- if .Values.radarr.enabled }}
+{{ $noDownloadClaim := empty .Values.global.sharedVolumes.downloadTemp.existingClaim }}
+{{ $noConfigClaim := empty .Values.radarr.persistence.existingClaim }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.radarr.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" . | nindent 4 }}
+  {{- with .Values.radarr.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.radarr.name }}
+  serviceName: {{ .Values.radarr.name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.radarr.name }}
+    spec:
+      terminationGracePeriodSeconds: 12
+      securityContext:
+        runAsUser: {{ .Values.global.userId }}
+        runAsGroup: {{ .Values.global.groupId }}
+        fsGroup: {{ .Values.global.groupId }}
+      containers:
+        - name: {{ .Values.radarr.name }}
+          image: {{ .Values.radarr.image }}:{{ .Values.radarr.tag }}
+          imagePullPolicy: {{ .Values.radarr.pullPolicy }}
+          env:
+            {{- if .Values.radarr.env }}
+            {{- toYaml .Values.radarr.env | nindent 12 }}
+            {{- end }}
+            - name: TZ
+              value: {{ .Values.global.timezone }}
+            - name: PGID
+              value: {{ .Values.global.groupId | quote }}
+            - name: PUID
+              value: {{ .Values.global.userId | quote }}
+          ports:
+            - containerPort: 8080
+              name: {{ .Values.radarr.name }}-web
+          volumeMounts:
+            - name: download-temp-volume
+              mountPath: /dl
+            - name: radarr-config-volume
+              mountPath: /config
+            {{- $mountCounter := 0 }}
+            {{- range .Values.global.sharedVolumes.movies }}
+            {{- $mountCounter = add1 $mountCounter }}
+            - name: media-volume-{{ $mountCounter }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+          {{- if .Values.radarr.probes.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.radarr.probes.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.radarr.probes.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.radarr.probes.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.radarr.resources }}
+          resources:
+            {{- toYaml .Values.radarr.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        {{- if $noDownloadClaim }}
+        {{- if .Values.global.sharedVolumes.downloadTemp.customVolumDef }}
+        {{- toYaml .Values.global.sharedVolumes.downloadTemp.customVolumDef | nindent 8 }}
+        {{- else }}
+        {{ fail "No download temp specification found" }}
+        {{- end }}
+        {{- else }}
+        - name: download-temp-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.global.sharedVolumes.downloadTemp.existingClaim }}
+        {{- end }}
+        {{- if not $noConfigClaim }}
+        - name: radarr-config-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.radarr.persistence.existingClaim }}
+        {{- end }}
+        {{- $volumeCounter := 0 }}
+        {{- range .Values.global.sharedVolumes.movies }}
+        {{- $volumeCounter = add1 $volumeCounter }}
+        - name: media-volume-{{ $volumeCounter }}
+          {{- if .existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .existingClaim }}
+          {{- else }}
+          {{- toYaml .customVolumeDef | nindent 10 }}
+          {{- end }}
+        {{- end }}
+  volumeClaimTemplates:
+    {{- if not $noConfigClaim }}
+    []
+    {{- end }}
+    {{- if $noConfigClaim }}
+    - metadata:
+        name: radarr-config-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: {{ .Values.radarr.persistence.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.radarr.persistence.size }}
+    {{- end }}
+{{- end }}

@@ -25,15 +25,16 @@ global:
       customVolumDef: {}
     # mounts for permanent media storage shared with Sonarr
     tv: []
-      # - existingClaim: ""
+      # - mountPath: /tv
+      #   existingClaim: ""
       #   customVolumeDef:
-      #     name: tv-series-volume
       #     nfs:
       #       path: /path/to/media
       #       server: "192.168.0.111"
     # mounts for permanent media storage shared with Radarr
     movies: []
-      # - existingClaim: movies-pvc
+      # - mountPath: /movies
+      #   existingClaim: movies-pvc
       #   customVolumeDef: {}
     recycle: {}
   
@@ -69,18 +70,16 @@ sabNZBD:
       paths: 
         - path: /
           pathType: ImplementationSpecific
-      # use name and kind so specify issuer details
       autoTlsIssuer:
         kind: ""
         name: ""
       tlsSecretName: ""
-  # Priority: customVolumDef > existingClaim > storageClass
+  # Priority: existingClaim > storageClass
   persistence:
     existingClaim: ""
     storageClass: default
     accessMode: ReadWriteOnce
     size: 3Gi
-  additionalVolumes: []
   env: []
   scripts:
     - postProcess: |
@@ -128,7 +127,12 @@ radarr:
   # needs global.ingress.enabled: true
   ingressRoutes:
     - host: radarr.local
-      autoTlsIssuer: ""
+      paths: 
+        - path: /
+          pathType: ImplementationSpecific
+      autoTlsIssuer:
+        kind: ""
+        name: ""
       tlsSecretName: ""
   persistence:
     existingClaim: ""
@@ -137,6 +141,33 @@ radarr:
     size: 3Gi
   env: []
   annotations: {}
+  probes:
+    readinessProbe:
+      failureThreshold: 5
+      timeoutSeconds: 5
+      periodSeconds: 20
+      httpGet:
+        port: 7878
+        path: /ping
+    livenessProbe:
+      failureThreshold: 3
+      timeoutSeconds: 5
+      periodSeconds: 20
+      initialDelaySeconds: 60
+      httpGet:
+        port: 7878
+        path: /ping
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 7878
+    annotations: {}
 
 sonarr:
   enabled: true

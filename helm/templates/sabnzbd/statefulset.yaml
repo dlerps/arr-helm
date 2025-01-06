@@ -65,7 +65,7 @@ spec:
       volumes:
         {{- if $noDownloadClaim }}
         {{- if .Values.global.sharedVolumes.downloadTemp.customVolumDef }}
-        {{ toYaml .Values.global.sharedVolumes.downloadTemp.customVolumDef | nindent 8 }}
+        {{- toYaml .Values.global.sharedVolumes.downloadTemp.customVolumDef | nindent 8 }}
         {{- else }}
         {{ fail "No download temp specification found" }}
         {{- end }}
