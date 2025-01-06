@@ -5,7 +5,6 @@ type: application
 
 version: 0.1.0
 
-# Current major version of the Ghostfolio. Not including the minor and patch version as this is an independent chart.
 appVersion: "1"
 
 dependencies: []

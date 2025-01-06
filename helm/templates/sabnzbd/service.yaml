@@ -1,0 +1,27 @@
+{{- if .Values.sabNZBD.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.sabNZBD.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" . | nindent 4 }}
+    app: {{ .Values.sabNZBD.name }}
+  {{- with .Values.sabNZBD.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.sabNZBD.service.type }}
+  selector:
+    app: {{ .Values.sabNZBD.name }}
+  ports:
+    - name: {{ .Values.sabNZBD.name }}-web
+      protocol: TCP
+      targetPort: 8080
+      {{- if eq .Values.sabNZBD.service.type "NodePort" }}
+      nodePort: {{ .Values.sabNZBD.service.port }}
+      {{- else }}
+      port: {{ .Values.sabNZBD.service.port }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,11 @@
+# Local values
+**/values.*.yaml
+**/values.*.yml
+
+# Secrets
+**/*secret*.yaml
+**/*secret*.yml
+
+# VS Code
+.vscode/*
+!vscode/recommended-extensions.json

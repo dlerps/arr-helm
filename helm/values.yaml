@@ -7,42 +7,53 @@ global:
     autoMountServiceToken: true
     annotations: {}
 
+  # Shared volumes between the applications & the outside world
+  # ===========================================================
+  # Priority: existingClaim > customVolumDef
+  #
+  # use an existing claim to attach a k8s volume (make sure to have RWX access mode)
+  #
+  # use customVolumeDef to define something like a hostPath of NFS volume:
+  # customVolumDef:
+  #   nfs:
+  #      path: /path/to/download-temp
+  #      server: "192.168.0.111"
   sharedVolumes:
     # temporary volume that is shared between sabNZBd, Radarr & Sonarr
-    # Priority: customVolumDef > existingClaim > storageClass
-    # use customVolumeDef to defione something like a hostPath of nfs volume:
-    # customVolumDef:
-    #   nfs:
-    #      path: /path/to/download-temp
-     #     server: "192.168.0.100"
     downloadTemp:
-      storageClass: default
       existingClaim: ""
-      # customVolumDef: {}
-    tv:
-      - name: tv-series-volume
-        nfs:
-          path: /path/to/media
-          server: "192.168.0.100"
-    movies:
-      - name: movies-volume
-        nfs:
-          path: /path/to/media
-          server: "192.168.0.100"
+      customVolumDef: {}
+    # mounts for permanent media storage shared with Sonarr
+    tv: []
+      # - existingClaim: ""
+      #   customVolumeDef:
+      #     name: tv-series-volume
+      #     nfs:
+      #       path: /path/to/media
+      #       server: "192.168.0.111"
+    # mounts for permanent media storage shared with Radarr
+    movies: []
+      # - existingClaim: movies-pvc
+      #   customVolumeDef: {}
+    recycle: {}
+  
+  timezone: Europe/Berlin
+  userId: 1000
+  groupId: 1000
 
   # use cert-manager to issue certificates for the ingress routes
   autoTls:
     enabled: false
-    clusterIssuer: letsencrypt-prod
-    issuer: ""
+    issuer:
+      name: letsencrypt-prod
+      kind: ClusterIssuer
 
   ingress:
-    enabled: true
+    enabled: false
     annotations: {}
     className: ""
-    # tls: true
-    # tlsSecretName: ""
-
+    tls: false
+    tlsSecretName: ""
 
 sabNZBD:
   enabled: true
@@ -53,10 +64,60 @@ sabNZBD:
   serviceAccount:
     annotations: {}
   # needs global.ingress.enabled: true
-  inngressRoutes: 
-    - sabnzbd.local
+  ingressRoutes: 
+    - host: sabnzbd.local
+      paths: 
+        - path: /
+          pathType: ImplementationSpecific
+      # use name and kind so specify issuer details
+      autoTlsIssuer:
+        kind: ""
+        name: ""
+      tlsSecretName: ""
+  # Priority: customVolumDef > existingClaim > storageClass
+  persistence:
+    existingClaim: ""
+    storageClass: default
+    accessMode: ReadWriteOnce
+    size: 3Gi
+  additionalVolumes: []
+  env: []
+  scripts:
+    - postProcess: |
+        #!/bin/sh
+        echo "Post processing script"
+        echo "Moving $1 to /downloads/complete"
+        mv $1 /downloads/complete
+  annotations: {}
+  probes:
+    readinessProbe:
+      failureThreshold: 5
+      timeoutSeconds: 5
+      periodSeconds: 20
+      httpGet:
+        port: 8080
+        path: /api?mode=version
+    livenessProbe:
+      failureThreshold: 3
+      timeoutSeconds: 5
+      periodSeconds: 20
+      initialDelaySeconds: 60
+      httpGet:
+        port: 8080
+        path: /api?mode=version
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
 
-radaar:
+radarr:
   enabled: true
   name: radarr
   image: linuxserver/radarr
@@ -65,8 +126,17 @@ radaar:
   serviceAccount:
     annotations: {}
   # needs global.ingress.enabled: true
-  inngressRoutes:
-    - radaar.local
+  ingressRoutes:
+    - host: radarr.local
+      autoTlsIssuer: ""
+      tlsSecretName: ""
+  persistence:
+    existingClaim: ""
+    storageClass: default
+    accessMode: ReadWriteOnce
+    size: 3Gi
+  env: []
+  annotations: {}
 
 sonarr:
   enabled: true
@@ -77,17 +147,35 @@ sonarr:
   serviceAccount:
     annotations: {}
   # needs global.ingress.enabled: true
-  inngressRoute:
-    - sonarr.local
+  ingressRoute:
+    - host: sonarr.local
+      autoTlsIssuer: ""
+      tlsSecretName: ""
+  persistence:
+    existingClaim: ""
+    storageClass: default
+    accessMode: ReadWriteOnce
+    size: 3Gi
+  env: []
+  annotations: {}
 
 overseerr:
   enabled: true
-  namespace: overseerr
+  name: overseerr
   image: linuxserver/overseerr
   tag: latest
   pullPolicy: Always
   serviceAccount:
     annotations: {}
   # needs global.ingress.enabled: true
-  inngressRoute:
-    - overseerr.local
+  ingressRoute:
+    - host: overseerr.local
+      autoTlsIssuer: ""
+      tlsSecretName: ""
+  persistence:
+    existingClaim: ""
+    storageClass: default
+    accessMode: ReadWriteOnce
+    size: 3Gi
+  env: []
+  annotations: {}

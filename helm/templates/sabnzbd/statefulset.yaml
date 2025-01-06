@@ -1,0 +1,97 @@
+{{- if .Values.sabNZBD.enabled }}
+{{ $noDownloadClaim := empty .Values.global.sharedVolumes.downloadTemp.existingClaim }}
+{{ $noConfigClaim := empty .Values.sabNZBD.persistence.existingClaim }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.sabNZBD.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" . | nindent 4 }}
+  {{- with .Values.sabNZBD.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.sabNZBD.name }}
+  serviceName: {{ .Values.sabNZBD.name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.sabNZBD.name }}
+    spec:
+      terminationGracePeriodSeconds: 12
+      securityContext:
+        runAsUser: {{ .Values.global.userId }}
+        runAsGroup: {{ .Values.global.groupId }}
+        fsGroup: {{ .Values.global.groupId }}
+      containers:
+        - name: {{ .Values.sabNZBD.name }}
+          image: {{ .Values.sabNZBD.image }}:{{ .Values.sabNZBD.tag }}
+          imagePullPolicy: {{ .Values.sabNZBD.pullPolicy }}
+          env:
+            {{- if .Values.sabNZBD.env }}
+            {{- toYaml .Values.sabNZBD.env | nindent 12 }}
+            {{- end }}
+            - name: TZ
+              value: {{ .Values.global.timezone }}
+            - name: PGID
+              value: {{ .Values.global.groupId | quote }}
+            - name: PUID
+              value: {{ .Values.global.userId | quote }}
+          ports:
+            - containerPort: 8080
+              name: {{ .Values.sabNZBD.name }}-web
+          volumeMounts:
+            - name: download-temp-volume
+              mountPath: /dl
+            - name: sabnzbd-config-volume
+              mountPath: /config
+          {{- if .Values.sabNZBD.probes.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.sabNZBD.probes.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.sabNZBD.probes.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.sabNZBD.probes.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.sabNZBD.resources }}
+          resources:
+            {{- toYaml .Values.sabNZBD.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        {{- if $noDownloadClaim }}
+        {{- if .Values.global.sharedVolumes.downloadTemp.customVolumDef }}
+        {{ toYaml .Values.global.sharedVolumes.downloadTemp.customVolumDef | nindent 8 }}
+        {{- else }}
+        {{ fail "No download temp specification found" }}
+        {{- end }}
+        {{- else }}
+        - name: download-temp-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.global.sharedVolumes.downloadTemp.existingClaim }}
+        {{- end }}
+        {{ if not $noConfigClaim }}
+        - name: sabnzbd-config-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.sabNZBD.persistence.existingClaim }}
+        {{- end }}
+  volumeClaimTemplates:
+    {{- if not $noConfigClaim }}
+    []
+    {{- end }}
+    {{- if $noConfigClaim }}
+    - metadata:
+        name: sabnzbd-config-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: {{ .Values.sabNZBD.persistence.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.sabNZBD.persistence.size }}
+    {{- end }}
+{{- end }}
