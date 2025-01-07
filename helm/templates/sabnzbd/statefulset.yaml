@@ -1,10 +1,11 @@
 {{- if .Values.sabNZBD.enabled }}
+{{- $name := .Values.sabNZBD.name -}}
 {{ $noDownloadClaim := empty .Values.global.sharedVolumes.downloadTemp.existingClaim }}
 {{ $noConfigClaim := empty .Values.sabNZBD.persistence.existingClaim }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Values.sabNZBD.name }}
+  name: {{ $name }}
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "Arr.labels" . | nindent 4 }}
@@ -15,13 +16,13 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: {{ .Values.sabNZBD.name }}
-  serviceName: {{ .Values.sabNZBD.name }}
+      app: {{ $name }}
+  serviceName: {{ $name }}
   replicas: 1
   template:
     metadata:
       labels:
-        app: {{ .Values.sabNZBD.name }}
+        app: {{ $name }}
     spec:
       terminationGracePeriodSeconds: 12
       securityContext:
@@ -29,7 +30,7 @@ spec:
         runAsGroup: {{ .Values.global.groupId }}
         fsGroup: {{ .Values.global.groupId }}
       containers:
-        - name: {{ .Values.sabNZBD.name }}
+        - name: {{ $name }}
           image: {{ .Values.sabNZBD.image }}:{{ .Values.sabNZBD.tag }}
           imagePullPolicy: {{ .Values.sabNZBD.pullPolicy }}
           env:
@@ -44,12 +45,17 @@ spec:
               value: {{ .Values.global.userId | quote }}
           ports:
             - containerPort: 8080
-              name: {{ .Values.sabNZBD.name }}-web
+              name: {{ $name }}-web
           volumeMounts:
             - name: download-temp-volume
               mountPath: /dl
             - name: sabnzbd-config-volume
               mountPath: /config
+            {{- range .Values.sabNZBD.scripts }}
+            - name: script-{{ .fileName | replace "." "-" }}-volume
+              subPath: {{ .fileName }}
+              mountPath: /scripts/{{ .fileName }}
+            {{- end }}
           {{- if .Values.sabNZBD.probes.readinessProbe }}
           readinessProbe:
             {{- toYaml .Values.sabNZBD.probes.readinessProbe | nindent 12 }}
@@ -78,6 +84,12 @@ spec:
         - name: sabnzbd-config-volume
           persistentVolumeClaim:
             claimName: {{ .Values.sabNZBD.persistence.existingClaim }}
+        {{- end }}
+        {{- range .Values.sabNZBD.scripts }}
+        - name: script-{{ .fileName | replace "." "-" }}-volume
+          configMap:
+            name: {{ $name }}-script-{{ .fileName | replace "." "-" }}
+            defaultMode: 0550
         {{- end }}
   volumeClaimTemplates:
     {{- if not $noConfigClaim }}

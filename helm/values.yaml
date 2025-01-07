@@ -81,12 +81,14 @@ sabNZBD:
     accessMode: ReadWriteOnce
     size: 3Gi
   env: []
-  scripts:
-    - postProcess: |
-        #!/bin/sh
-        echo "Post processing script"
-        echo "Moving $1 to /downloads/complete"
-        mv $1 /downloads/complete
+  # define custom scripts to be used from sabNZBD (mounted under /scripts/[filename])
+  scripts: []
+    # - fileName: postprocess.sh
+    #   script: |
+    #     #!/bin/sh
+    #     echo "Post processing script"
+    #     echo "Moving $1 to /downloads/complete"
+    #     mv $1 /downloads/complete
   annotations: {}
   probes:
     readinessProbe:
