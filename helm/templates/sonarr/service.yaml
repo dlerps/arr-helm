@@ -1,0 +1,27 @@
+{{- if .Values.sonarr.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.sonarr.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" . | nindent 4 }}
+    app: {{ .Values.sonarr.name }}
+  {{- with .Values.sonarr.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.sonarr.service.type }}
+  selector:
+    app: {{ .Values.sonarr.name }}
+  ports:
+    - name: {{ .Values.sonarr.name }}-web
+      protocol: TCP
+      targetPort: 8989
+      {{- if eq .Values.sonarr.service.type "NodePort" }}
+      nodePort: {{ .Values.sonarr.service.port }}
+      {{- else }}
+      port: {{ .Values.sonarr.service.port }}
+      {{- end }}
+{{- end }}

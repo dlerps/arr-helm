@@ -106,8 +106,8 @@ sabNZBD:
         path: /api?mode=version
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 500m
+      memory: 256Mi
     limits:
       cpu: "1"
       memory: 1Gi
@@ -160,7 +160,7 @@ radarr:
   resources:
     requests:
       cpu: 250m
-      memory: 512Mi
+      memory: 256Mi
     limits:
       cpu: "1"
       memory: 1Gi
@@ -178,9 +178,14 @@ sonarr:
   serviceAccount:
     annotations: {}
   # needs global.ingress.enabled: true
-  ingressRoute:
+  ingressRoutes:
     - host: sonarr.local
-      autoTlsIssuer: ""
+      paths: 
+        - path: /
+          pathType: ImplementationSpecific
+      autoTlsIssuer:
+        kind: ""
+        name: ""
       tlsSecretName: ""
   persistence:
     existingClaim: ""
@@ -189,6 +194,33 @@ sonarr:
     size: 3Gi
   env: []
   annotations: {}
+  probes:
+    readinessProbe:
+      failureThreshold: 5
+      timeoutSeconds: 5
+      periodSeconds: 20
+      httpGet:
+        port: 8989
+        path: /ping
+    livenessProbe:
+      failureThreshold: 3
+      timeoutSeconds: 5
+      periodSeconds: 20
+      initialDelaySeconds: 60
+      httpGet:
+        port: 8989
+        path: /ping
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 8989
+    annotations: {}
 
 overseerr:
   enabled: true

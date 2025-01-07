@@ -34,6 +34,24 @@ spec:
           {{- end }}
     {{- end }}
     {{- end }}
+    {{- if .Values.sonarr.enabled }}
+    {{- range .Values.sonarr.ingressRoutes }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path | default "/" }}
+            {{- with .pathType }}
+            pathType: {{ . }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ $.Values.sonarr.name }}
+                port:
+                  name: {{ $.Values.sonarr.name }}-web
+          {{- end }}
+    {{- end }}
+    {{- end }}
     {{- if .Values.radarr.enabled }}
     {{- range .Values.radarr.ingressRoutes }}
     - host: {{ .host | quote }}
@@ -62,6 +80,19 @@ spec:
         - {{ .host | quote }}
       {{- if $.Values.global.autoTls.enabled }}
       secretName: {{ $.Values.sabNZBD.name }}-cert-secret-{{ $counter }}
+      {{- else  }}
+      secretName: {{ .tlsSecretName | default $.Values.global.ingress.tlsSecretName }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Values.sonarr.enabled }}
+    {{- $counter := 0 }}
+    {{- range .Values.sonarr.ingressRoutes }}
+    {{- $counter = add1 $counter }}
+    - hosts:
+        - {{ .host | quote }}
+      {{- if $.Values.global.autoTls.enabled }}
+      secretName: {{ $.Values.sonarr.name }}-cert-secret-{{ $counter }}
       {{- else  }}
       secretName: {{ .tlsSecretName | default $.Values.global.ingress.tlsSecretName }}
       {{- end }}
