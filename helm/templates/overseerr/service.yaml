@@ -1,0 +1,27 @@
+{{- if .Values.overseerr.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.overseerr.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" . | nindent 4 }}
+    app: {{ .Values.overseerr.name }}
+  {{- with .Values.overseerr.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.overseerr.service.type }}
+  selector:
+    app: {{ .Values.overseerr.name }}
+  ports:
+    - name: {{ .Values.overseerr.name }}-web
+      protocol: TCP
+      targetPort: 5055
+      {{- if eq .Values.overseerr.service.type "NodePort" }}
+      nodePort: {{ .Values.overseerr.service.port }}
+      {{- else }}
+      port: {{ .Values.overseerr.service.port }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,76 @@
+{{- if .Values.overseerr.enabled }}
+{{ $noConfigClaim := empty .Values.overseerr.persistence.existingClaim }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.overseerr.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "Arr.labels" . | nindent 4 }}
+  {{- with .Values.overseerr.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.overseerr.name }}
+  serviceName: {{ .Values.overseerr.name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.overseerr.name }}
+    spec:
+      terminationGracePeriodSeconds: 12
+      securityContext: {}
+      containers:
+        - name: {{ .Values.overseerr.name }}
+          image: {{ .Values.overseerr.image }}:{{ .Values.overseerr.tag }}
+          imagePullPolicy: {{ .Values.overseerr.pullPolicy }}
+          env:
+            {{- if .Values.overseerr.env }}
+            {{- toYaml .Values.overseerr.env | nindent 12 }}
+            {{- end }}
+            - name: TZ
+              value: {{ default "Etc/UTC" .Values.global.timezone }}
+          ports:
+            - containerPort: 5055
+              name: {{ .Values.overseerr.name }}-web
+          volumeMounts:
+            - name: overseerr-config-volume
+              mountPath: /config
+          {{- if .Values.overseerr.probes.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.overseerr.probes.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.overseerr.probes.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.overseerr.probes.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.overseerr.resources }}
+          resources:
+            {{- toYaml .Values.overseerr.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        {{ if not $noConfigClaim }}
+        - name: overseerr-config-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.overseerr.persistence.existingClaim }}
+        {{- end }}
+  volumeClaimTemplates:
+    {{- if not $noConfigClaim }}
+    []
+    {{- end }}
+    {{- if $noConfigClaim }}
+    - metadata:
+        name: overseerr-config-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: {{ .Values.overseerr.persistence.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.overseerr.persistence.size }}
+    {{- end }}
+{{- end }}

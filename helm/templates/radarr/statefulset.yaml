@@ -37,7 +37,7 @@ spec:
             {{- toYaml .Values.radarr.env | nindent 12 }}
             {{- end }}
             - name: TZ
-              value: {{ .Values.global.timezone }}
+              value: {{ default "Etc/UTC" .Values.global.timezone }}
             - name: PGID
               value: {{ .Values.global.groupId | quote }}
             - name: PUID

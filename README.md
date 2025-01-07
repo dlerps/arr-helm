@@ -12,6 +12,6 @@ Help with this chart is always welcome. Feel free to fork and submit a PR. Pleas
 - [ ] Add Lidarr
 - [ ] Add Tdarr
 - [ ] Add Prowlarr
-- [ ] Fix security context of Sonarr
+- [ ] Fix security context of Sonarr & Overseerr
 - [ ] Set proper resources
 - [ ] Add support for custom init containers

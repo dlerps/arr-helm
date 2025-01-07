@@ -38,7 +38,7 @@ global:
       #   customVolumeDef: {}
     recycle: {}
   
-  timezone: Europe/Berlin
+  timezone: Etc/UTC
   userId: 1000
   groupId: 1000
 
@@ -231,9 +231,14 @@ overseerr:
   serviceAccount:
     annotations: {}
   # needs global.ingress.enabled: true
-  ingressRoute:
+  ingressRoutes:
     - host: overseerr.local
-      autoTlsIssuer: ""
+      paths: 
+        - path: /
+          pathType: ImplementationSpecific
+      autoTlsIssuer:
+        kind: ""
+        name: ""
       tlsSecretName: ""
   persistence:
     existingClaim: ""
@@ -242,3 +247,30 @@ overseerr:
     size: 3Gi
   env: []
   annotations: {}
+  probes:
+    readinessProbe:
+      failureThreshold: 5
+      timeoutSeconds: 5
+      periodSeconds: 20
+      httpGet:
+        port: 5055
+        path: /api/v1/status
+    livenessProbe:
+      failureThreshold: 3
+      timeoutSeconds: 5
+      periodSeconds: 20
+      initialDelaySeconds: 60
+      httpGet:
+        port: 5055
+        path: /api/v1/status
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 5055
+    annotations: {}
