@@ -58,6 +58,29 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.overseerr.persistence.existingClaim }}
         {{- end }}
+      {{- if .Values.overseerr.nodeAffinity }}
+      affinity:
+        nodeAffinity:
+          {{- toYaml .Values.overseerr.nodeAffinity | nindent 10 }}
+      {{- else if .Values.global.nodeAffinity }}
+      affinity:
+        nodeAffinity:
+          {{- toYaml .Values.global.nodeAffinity | nindent 10 }}
+      {{- end }}
+      {{- if .Values.overseerr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.overseerr.nodeSelector | nindent 8 }}
+      {{- else if .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.overseerr.tolerations }}
+      tolerations:
+        {{- toYaml .Values.overseerr.tolerations | nindent 8 }}
+      {{- else if .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
   volumeClaimTemplates:
     {{- if not $noConfigClaim }}
     []

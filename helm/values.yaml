@@ -37,6 +37,12 @@ global:
       #   existingClaim: movies-pvc
       #   customVolumeDef: {}
     recycle: {}
+
+  # define global scheduling rules for the applications
+  # definitions in the apps itself will overwrite these settings
+  nodeSelector: {}
+  nodeAffinity: {}
+  tolerations: {}
   
   timezone: Etc/UTC
   userId: 1000
@@ -46,7 +52,7 @@ global:
   autoTls:
     enabled: false
     issuer:
-      name: letsencrypt-prod
+      name: letsencrypt-staging
       kind: ClusterIssuer
 
   ingress:
@@ -79,9 +85,9 @@ sabNZBD:
     existingClaim: ""
     storageClass: default
     accessMode: ReadWriteOnce
-    size: 3Gi
+    size: 200Mi
   env: []
-  # define custom scripts to be used from sabNZBD (mounted under /scripts/[filename])
+  # define custom scripts to be used from sabNZBD (each mounted at /scripts/[filename])
   scripts: []
     # - fileName: postprocess.sh
     #   script: |
@@ -90,6 +96,9 @@ sabNZBD:
     #     echo "Moving $1 to /downloads/complete"
     #     mv $1 /downloads/complete
   annotations: {}
+  nodeSelector: {}
+  nodeAffinity: {}
+  tolerations: {}
   probes:
     readinessProbe:
       failureThreshold: 5
@@ -108,11 +117,9 @@ sabNZBD:
         path: /api?mode=version
   resources:
     requests:
-      cpu: 500m
-      memory: 256Mi
-    limits:
-      cpu: "1"
       memory: 1Gi
+    limits:
+      memory: 2Gi
   service:
     type: ClusterIP
     port: 8080
@@ -140,9 +147,12 @@ radarr:
     existingClaim: ""
     storageClass: default
     accessMode: ReadWriteOnce
-    size: 3Gi
+    size: 5Gi
   env: []
   annotations: {}
+  nodeSelector: {}
+  nodeAffinity: {}
+  tolerations: {}
   probes:
     readinessProbe:
       failureThreshold: 5
@@ -161,11 +171,9 @@ radarr:
         path: /ping
   resources:
     requests:
-      cpu: 250m
-      memory: 256Mi
+      memory: 1500Mi
     limits:
-      cpu: "1"
-      memory: 1Gi
+      memory: 2500Mi
   service:
     type: ClusterIP
     port: 7878
@@ -193,9 +201,12 @@ sonarr:
     existingClaim: ""
     storageClass: default
     accessMode: ReadWriteOnce
-    size: 3Gi
+    size: 5Gi
   env: []
   annotations: {}
+  nodeSelector: {}
+  nodeAffinity: {}
+  tolerations: {}
   probes:
     readinessProbe:
       failureThreshold: 5
@@ -214,11 +225,9 @@ sonarr:
         path: /ping
   resources:
     requests:
-      cpu: 250m
-      memory: 256Mi
+      memory: 1500Mi
     limits:
-      cpu: "1"
-      memory: 1Gi
+      memory: 2500Mi
   service:
     type: ClusterIP
     port: 8989
@@ -246,9 +255,12 @@ overseerr:
     existingClaim: ""
     storageClass: default
     accessMode: ReadWriteOnce
-    size: 3Gi
+    size: 200Mi
   env: []
   annotations: {}
+  nodeSelector: {}
+  nodeAffinity: {}
+  tolerations: {}
   probes:
     readinessProbe:
       failureThreshold: 5
@@ -271,7 +283,7 @@ overseerr:
       memory: 256Mi
     limits:
       cpu: "1"
-      memory: 1Gi
+      memory: 512Mi
   service:
     type: ClusterIP
     port: 5055

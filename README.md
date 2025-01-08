@@ -13,5 +13,7 @@ Help with this chart is always welcome. Feel free to fork and submit a PR. Pleas
 - [ ] Add Tdarr
 - [ ] Add Prowlarr
 - [ ] Fix security context of Sonarr & Overseerr
-- [ ] Set proper resources
+- [x] Set proper resources
 - [ ] Add support for custom init containers
+- [x] Enable affinities, tolerations and node selectors
+- [ ] Extend documentation

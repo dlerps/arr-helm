@@ -96,6 +96,29 @@ spec:
           {{- toYaml .customVolumeDef | nindent 10 }}
           {{- end }}
         {{- end }}
+      {{- if .Values.radarr.nodeAffinity }}
+      affinity:
+        nodeAffinity:
+          {{- toYaml .Values.radarr.nodeAffinity | nindent 10 }}
+      {{- else if .Values.global.nodeAffinity }}
+      affinity:
+        nodeAffinity:
+          {{- toYaml .Values.global.nodeAffinity | nindent 10 }}
+      {{- end }}
+      {{- if .Values.radarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.radarr.nodeSelector | nindent 8 }}
+      {{- else if .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.radarr.tolerations }}
+      tolerations:
+        {{- toYaml .Values.radarr.tolerations | nindent 8 }}
+      {{- else if .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
   volumeClaimTemplates:
     {{- if not $noConfigClaim }}
     []
